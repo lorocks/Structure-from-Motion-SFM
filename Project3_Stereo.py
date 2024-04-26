@@ -268,6 +268,31 @@ def getEpipole(F):
    eigen = v[-1, :]
    return eigen / eigen[2]
 
+# Calculate Homography of Rectification
+def computeRectificationHomography(e, height, width):
+    T = np.array([[1, 0, -width/2], [0, 1, -height/2], [0, 0, 1]])
+    e_p = T @ e
+    e_p = e_p / e_p[2]
+    ex = e_p[0]
+    ey = e_p[1]
+
+    if ex >= 0:
+        a = 1
+    else:
+        a = -1
+
+    R1 = a * ex / np.sqrt(ex ** 2 + ey ** 2)
+    R2 = a * ey / np.sqrt(ex ** 2 + ey ** 2)
+    R = np.array([[R1, R2, 0], [-R2, R1, 0], [0, 0, 1]])
+    e_p = R @ e_p
+    x = e_p[0]
+
+    G = np.array([[1, 0, 0], [0, 1, 0], [-1/x, 0, 1]])
+
+    H = np.linalg.inv(T) @ G @ R @ T
+
+    return H
+
 
 def main():
   # Read images
@@ -422,17 +447,19 @@ def main():
 
   combine_image = np.concatenate((epipole_image1, epipole_image2), axis = 1)
 
-  # Computing Homographies #####
-  _, H1, H2 = cv2.stereoRectifyUncalibrated(np.float32(best_matches[:, 0:2]), np.float32(best_matches[:, 2:4]), F, imgSize=(image1.shape[1], image1.shape[0]))
+  ##### Manual Calculation of Homographies
+  e = getEpipole(F.T)
+  H2 = computeRectificationHomography(e, image2.shape[0], image2.shape[1])
+
+  # Computing Homographies ##### Uses OpenCV
+  ##### Finding H2 works, but doing RANSAC for H1 does give very good results yet
+  _, H1, H2_ = cv2.stereoRectifyUncalibrated(np.float32(best_matches[:, 0:2]), np.float32(best_matches[:, 2:4]), F, imgSize=(image1.shape[1], image1.shape[0]))
   print("Estimated H1 and H2 as \n \n Homography Matrix 1: \n", H1,'\n \n Homography Matrix 2:\n ', H2)
 
 
   # Get rectified images
   rect_image1 = cv2.warpPerspective(image1, H1, (image1.shape[1], image1.shape[0]))
   rect_image2 = cv2.warpPerspective(image2, H2, (image2.shape[1], image2.shape[0]))
-
-  small_rect_image1 = cv2.resize(rect_image1, (int(rect_image1.shape[1] / 2), int(rect_image1.shape[0] / 2)))
-  small_rect_image2 = cv2.resize(rect_image2, (int(rect_image2.shape[1] / 2), int(rect_image2.shape[0] / 2)))
 
   small_rect_image11 = cv2.resize(rect_image1, (int(rect_image1.shape[1] / 4), int(rect_image1.shape[0] / 4)))
   small_rect_image21 = cv2.resize(rect_image2, (int(rect_image2.shape[1] / 4), int(rect_image2.shape[0] / 4)))
@@ -530,6 +557,6 @@ def main():
 
 try:
   disp = main()
-except Exception as e:
+except Exception as err:
   print("Invalid input")
-  print(e)
+  print(err)
