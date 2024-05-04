@@ -4,6 +4,8 @@ import math
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+
+### Functions for Section 3.1
 def normalize(points):
     point_mean = np.mean(points, axis=0)
     x_mean = point_mean[0]
@@ -50,7 +52,7 @@ def findFMatrix(points):
   F = np.dot(uF, np.dot(sF, vF))
   F = np.dot(T2.T, np.dot(F, T1))
 
-  return F
+  return F # Returns 3x3 np array
 
 # Calculate error between actual points and homographical transformed points
 def findError(points, F, threshold):
@@ -66,7 +68,7 @@ def findError(points, F, threshold):
       below_thresh.append([x1, y1, x2, y2])
       count += 1
 
-  return count, np.array(below_thresh)
+  return count, np.array(below_thresh) # Returns count of best inliers in RANSAC, and, the best_matches array
 
 
 # RANSAC algorithm
@@ -145,9 +147,12 @@ def RANSAC(points, sample_size, threshold):
       break
 
   print(inlier_count_max, len(best_inliers))
-  return best_fit, best_inliers
+  return best_fit, best_inliers # Returns 3x3 np array, and Nx4 np array
+
+### Section 3.1 Functions End
 
 
+### Function to Display Epipoles
 def getMinMaxXY(x_min, x_max, y_min, y_max, line_info):
   if x_min == 0:
     y_min = y_max = -line_info[2]/line_info[1]
@@ -188,7 +193,10 @@ def drawRectEpipoles(points, F, image):
 
   return draw_image
 
+### Function to Display Epipoles End
 
+
+### Function for Section 3.5
 # Check if points have positive z values, Cheirality Condition
 def cheiralityCount(points ,T, R_z):
     count = 0
@@ -197,6 +205,7 @@ def cheiralityCount(points ,T, R_z):
             count += 1
     return count
 
+### Function for Section 3.5 End
 
 # Function to calculate SSD and then fill a disparity array
 def disparitySSD(image_left, image_right):
@@ -262,6 +271,8 @@ def disparitySAD(image_left,image_right):
 
     return disparity
 
+
+### Functions to Rectify Epipolar Lines
 # Calculate epipole from Fundamental matrix
 def getEpipole(F):
    u, s, v = np.linalg.svd(F)
@@ -293,12 +304,14 @@ def computeRectificationHomography(e, height, width):
 
     return H
 
+### Functions End
 
 def main():
   # Read images
   image1 = cv2.imread(f"im0.png")
   image2 = cv2.imread(f"im1.png")
 
+  # Calibration Text Files
   # Get data from calib.txt
   f = open(f"calib.txt", 'r')
   for line in f:
@@ -342,6 +355,8 @@ def main():
       print("\nBaseline:")
       print(baseline)
 
+
+  ### Section 3.1 Start
   # Define BRISK feature extractor
   BRISK = cv2.BRISK_create()
 
@@ -372,17 +387,34 @@ def main():
           (x2, y2) = keypoints2[m.trainIdx].pt  # List 2
           view_matches.append([m])
           linking_matrix.append([x1, y1, x2, y2])
-  linking_matrix = np.array(linking_matrix)
+  linking_matrix = np.array(linking_matrix) # A Nx4 np array, 
+  # Column 1 contains x position of feature 1, 
+  # Column 2 contains y position of feature 1, 
+  # Column 3 contains x position of feature 2, 
+  # Column 4 contains y position of feature 2
 
   # Display matches
   match_img = cv2.drawMatchesKnn(image1, keypoints1, image2, keypoints2, view_matches, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
+  ### Section 3.1 End
+
+
+  ### Section 3.2 Start
   # Perform RANSAC
-  F, best_matches = RANSAC(linking_matrix.copy(), 8, 0.002) # something wrong with best matches also
+  # F is a 3x3 np array
+  # best_matches  is a subset of linking_matrx, 4 columns and rows are based on how many best inliers are found in RANSAC
+  # best_matches[:, 0:2] => gives best inlier features for image 1, N/2 x 4
+  # best_matches[:, 2:4] => gives best inlier features for image 2, N/2 x 4
+  F, best_matches = RANSAC(linking_matrix.copy(), 8, 0.002)
   print("\nFundamental Matrix:")
   print(F)
 
+  ### Section 3.2 End
+
+
+  ### Section 3.3 Start
   # # E matrix
+  # E is a 3x3 np array
   E = np.dot(K1.T, np.dot(F, K0))
 
   # Reduce rank
@@ -391,8 +423,12 @@ def main():
   E = np.dot(u, np.dot(np.diag(s), v))
 
   print("\nEssential Matrix:")
-  print(E)
+  print(E) # 3x3 np array
 
+  ### Section 3.3 End
+
+
+  ### Section 3.4 Start
   # Calculate poses
   u, s, v = np.linalg.svd(E)
   W = np.array([[0,-1, 0],
@@ -405,7 +441,14 @@ def main():
 
   poses = [[R1, T1], [R2, T1], [R1, T2], [R2, T2]]
 
-  # Trianglulation
+  # T is actually C which is a 1x3 np array
+  # R is 3x3 np array
+
+  ### Section 3.4 End
+
+
+  ### Section 3.5 Start
+  # Linear Trianglulation
   points_3D = []
   R_best = None
   T_best = None
@@ -440,6 +483,10 @@ def main():
   print("\nTranslation:")
   print(T_best)
 
+  ### Section 3.5 End
+
+
+
 
   # Draw Epipolar lines before rectification
   epipole_image1 = drawEpipoles(best_matches[:, 0:2], F, image1)
@@ -448,8 +495,8 @@ def main():
   combine_image = np.concatenate((epipole_image1, epipole_image2), axis = 1)
 
   ##### Manual Calculation of Homographies
-  e = getEpipole(F.T)
-  H2 = computeRectificationHomography(e, image2.shape[0], image2.shape[1])
+  e = getEpipole(F.T) # Returns a singular value
+  H2 = computeRectificationHomography(e, image2.shape[0], image2.shape[1]) # Returns 3x3 np array
 
   # Computing Homographies ##### Uses OpenCV
   ##### Finding H2 works, but doing RANSAC for H1 does give very good results yet
