@@ -22,14 +22,15 @@ def cheiralityCount(points,T,R_z):
     return count
 
 # Getting the best camera pose (R,C) by checking which of the best of the four poses has most points satisfying the +Z and Chierality Condition
-def best_camera_pose(X,camera_poses):
+def best_camera_pose(X_set,camera_poses):
     best_count = 0
     best_index = 0
     for i, R_C in enumerate(camera_poses):
         R, C = R_C
-        current_count = cheiralityCount(X,C.reshape((3,1)),R[2,:].reshape((1,3)))
+        current_count = cheiralityCount(X_set[i],C.reshape((3,1)),R[2,:].reshape((1,3)))
         if current_count > best_count:
             best_count = current_count
             best_index = i
     R_best, C_best = camera_poses[best_index]
-    return R_best, C_best
+    X_best = X_set[best_index]
+    return R_best, C_best, X_best
