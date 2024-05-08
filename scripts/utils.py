@@ -7,7 +7,7 @@ from scipy.spatial.transform import Rotation
 def load_imgs(folder_path):
     images = []
     for filename in os.listdir(folder_path):
-        img = cv2.imread(os.join.path(folder_path,filename))
+        img = cv2.imread(os.path.join(folder_path,filename))
         images.append(img)
     return images
 

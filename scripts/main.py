@@ -5,6 +5,7 @@ import copy
 from camera_poses import *
 from disparity import *
 from epipolar_viz import *
+from feature_extraction import *
 from fmatrix_ransac import *
 from fundamental_matrix import *
 from pnp import *
@@ -28,6 +29,10 @@ def main():
     # img1_pts and img2_pts: both [N,2] shape vectors
     # linking_matrix: [N,4] shape matrix
     img1_pts, img2_pts, linking_matrix = match_BRISK_features(kp1,features1,kp2,features2)
+
+    # feature_matrix has a shape [N,M,2] --> N: total nnumber of images, M: total number of common features
+    feature_matrix = construct_feature_matrix("../data/images/","1.jpg")
+    print("Shape of the feature matrix: ",feature_matrix.shape)
 
     print("Matched BRISK Features")
 
