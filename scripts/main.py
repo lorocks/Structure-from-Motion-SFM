@@ -83,7 +83,7 @@ def main():
             X = linear_triangulation(img_ref_pts,img_pts,C1,C2,R1,R2,K,K)
             pts_3D = non_linear_triangulation(X,img_ref_pts,img_pts,C1,C2,R1,R2,K,K)
         ### To Do ###
-        pts3D = bundle_adjustment(i,pts_3D,feature_matrix,all_RC,K)
+        pts_3D = bundle_adjustment(i,pts_3D,feature_matrix,all_RC,K)
         #############
 
 if __name__ == "__main__":
