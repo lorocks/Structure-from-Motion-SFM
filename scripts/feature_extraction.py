@@ -88,7 +88,7 @@ def extract_features_to_file(images_dir):
                     match_dict[(round(point[0], 2), round(point[1], 2))]["where"][i+j+2] = matched_keypoints_img[k]
 
         # Save dict to file
-        file = open(f"matching{i+1}.txt", "w")
+        file = open(os.path.join(images_dir, f"matching{i+1}.txt"), "w")
         file.write(f"nFeatures: {len(match_dict.keys())}\n")
         for location in match_dict.keys():
             file.write(f"{match_dict[location]["how_many"]} {match_dict[location]["rgb"][2]} {match_dict[location]["rgb"][1]} {match_dict[location]["rgb"][0]} {location[0]} {location[1]}")
