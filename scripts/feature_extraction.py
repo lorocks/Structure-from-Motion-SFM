@@ -66,11 +66,13 @@ def extract_features_to_file(images_dir):
     sift = cv2.SIFT_create()
 
     for i, reference_img_name in enumerate(image_files):
+        print(f"Ref: {i}")
         match_dict = {}
         reference_image = cv2.imread(os.path.join(images_dir,reference_img_name))
         reference_gray = cv2.cvtColor(reference_image, cv2.COLOR_BGR2GRAY)
         reference_keypoints, reference_descriptors = sift.detectAndCompute(reference_gray, None)
-        for j, img_name in enumerate(image_files[i:]):
+        for j, img_name in enumerate(image_files[i+1:]):
+            print(f"{img_name}")
             image = cv2.imread(os.path.join(images_dir,img_name))
             image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             img_keypoints, img_descriptors = sift.detectAndCompute(image_gray, None)
@@ -83,17 +85,27 @@ def extract_features_to_file(images_dir):
                         match_dict[(round(point[0], 2), round(point[1], 2))]["how_many"] += 1
                         match_dict[(round(point[0], 2), round(point[1], 2))]["where"][i+j+2] = matched_keypoints_img[k]
                 except:
+                    match_dict[(round(point[0], 2), round(point[1], 2))] = {}
                     match_dict[(round(point[0], 2), round(point[1], 2))]["rgb"] = reference_image[round(point[1]), round(point[0])]
-                    match_dict[(round(point[0], 2), round(point[1], 2))]["how_many"] = 1
+                    match_dict[(round(point[0], 2), round(point[1], 2))]["how_many"] = 2
+                    match_dict[(round(point[0], 2), round(point[1], 2))]["where"] = {}
                     match_dict[(round(point[0], 2), round(point[1], 2))]["where"][i+j+2] = matched_keypoints_img[k]
 
         # Save dict to file
-        file = open(os.path.join(images_dir, f"matching{i+1}.txt"), "w")
+        file = open(f"../data/features/matching{i+1}.txt", "w")
         file.write(f"nFeatures: {len(match_dict.keys())}\n")
         for location in match_dict.keys():
-            file.write(f"{match_dict[location]["how_many"]} {match_dict[location]["rgb"][2]} {match_dict[location]["rgb"][1]} {match_dict[location]["rgb"][0]} {location[0]} {location[1]}")
-            for where in match_dict["where"].items():
-                file.write(f"{where[0]} {where[1][0]} {where[1][1]}")
+            num = match_dict[location]["how_many"]
+            R = match_dict[location]["rgb"][2]
+            G = match_dict[location]["rgb"][1]
+            B = match_dict[location]["rgb"][0]
+            x = location[0]
+            y = location[1]
+            file.write(f"{num} {R} {G} {B} {x} {y}")
+            for where in match_dict[location]["where"].keys():
+                x = match_dict[location]["where"][where][0]
+                y = match_dict[location]["where"][where][1]
+                file.write(f" {where} {x} {y}")
             file.write("\n")
         file.close()
 
