@@ -11,6 +11,7 @@ def load_imgs(folder_path):
         images.append(img)
     return images
 
+'''
 # Detecting feature locations and descriptors
 def detect_BRISK_features(rgb_img):
     BRISK = cv2.BRISK_create()
@@ -33,6 +34,15 @@ def match_BRISK_features(kp1,features1,kp2,features2):
     img2_pts = np.array(img2_pts)
     linking_matrix = np.array(linking_matrix)
     return img1_pts, img2_pts, linking_matrix
+'''
+
+# Creating a linking matrix using the keypoints of matched features of two images
+def create_linking_matrix(img1_pts,img2_pts):
+    linking_matrix = []
+    for i in range(img1_pts.shape):
+        linking_matrix.append([img1_pts[i,0],img1_pts[i,1],img2_pts[i,0],img2_pts[i,1]])
+    linking_matrix = np.array(linking_matrix)
+    return linking_matrix
 
 # Computing the essential matrix from the Fundamental Matrix and Intrinsic Camera Parameters
 def essential_matrix(F,K1,K2):
