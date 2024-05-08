@@ -58,3 +58,51 @@ def construct_feature_matrix(images_dir,reference_img_name):
                 feature_matrix[image_files.index(img_name)].append([kp_img])
     feature_matrix = np.array(feature_matrix).reshape(len(image_files),-1,2)
     return feature_matrix # feature_matrix has a shape [N,M,2] --> N: total nnumber of images, M: total number of common features
+
+
+# Testing extract featurees and save to file
+def extract_features_to_file(images_dir):
+    image_files = os.listdir(images_dir)
+    sift = cv2.SIFT_create()
+
+    for i, reference_img_name in enumerate(image_files):
+        match_dict = {}
+        reference_image = cv2.imread(os.path.join(images_dir,reference_img_name))
+        reference_gray = cv2.cvtColor(reference_image, cv2.COLOR_BGR2GRAY)
+        reference_keypoints, reference_descriptors = sift.detectAndCompute(reference_gray, None)
+        for j, img_name in enumerate(image_files[i:]):
+            image = cv2.imread(os.path.join(images_dir,img_name))
+            image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            img_keypoints, img_descriptors = sift.detectAndCompute(image_gray, None)
+
+            matched_keypoints_ref, matched_keypoints_img = find_matches(reference_keypoints,reference_descriptors,img_keypoints,img_descriptors, 0.75)
+
+            for k, point in enumerate(matched_keypoints_ref):
+                try:
+                    if match_dict[(round(point[0], 2), round(point[1], 2))]:
+                        match_dict[(round(point[0], 2), round(point[1], 2))]["how_many"] += 1
+                        match_dict[(round(point[0], 2), round(point[1], 2))]["where"][i+j+2] = matched_keypoints_img[k]
+                except:
+                    match_dict[(round(point[0], 2), round(point[1], 2))]["rgb"] = reference_image[round(point[1]), round(point[0])]
+                    match_dict[(round(point[0], 2), round(point[1], 2))]["how_many"] = 1
+                    match_dict[(round(point[0], 2), round(point[1], 2))]["where"][i+j+2] = matched_keypoints_img[k]
+
+        # Save dict to file
+        file = open(f"matching{i+1}.txt", "w")
+        file.write(f"nFeatures: {len(match_dict.keys())}\n")
+        for location in match_dict.keys():
+            file.write(f"{match_dict[location]["how_many"]} {match_dict[location]["rgb"][2]} {match_dict[location]["rgb"][1]} {match_dict[location]["rgb"][0]} {location[0]} {location[1]}")
+            for where in match_dict["where"].items():
+                file.write(f"{where[0]} {where[1][0]} {where[1][1]}")
+            file.write("\n")
+        file.close()
+
+
+
+
+
+
+
+
+
+    print(image_files)
