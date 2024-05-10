@@ -39,7 +39,7 @@ def match_BRISK_features(kp1,features1,kp2,features2):
 # Creating a linking matrix using the keypoints of matched features of two images
 def create_linking_matrix(img1_pts,img2_pts):
     linking_matrix = []
-    for i in range(img1_pts.shape):
+    for i in range(img1_pts.shape[0]):
         linking_matrix.append([img1_pts[i,0],img1_pts[i,1],img2_pts[i,0],img2_pts[i,1]])
     linking_matrix = np.array(linking_matrix)
     return linking_matrix
@@ -92,8 +92,8 @@ def linear_pnp_error(X,x,K,R,C):
     u, v = x[0], x[1]
     u_proj = np.divide(np.dot(p1,X),np.dot(p3,X))
     v_proj = np.divide(np.dot(p2,X),np.dot(p3,X))
-    error = np.squeeze(np.square(v-v_proj) + np.square(u-u_proj))
-    return error
+    error = np.squeeze((v-v_proj) + (u-u_proj))
+    return float(np.linalg.norm(error))
 
 # XX = [Q[0], Q[1], Q[2], Q[3], C[0], C[1], C[2]] --> Q is the quaternion and C is the translation vector of the camera center
 def non_linear_pnp_loss(XX,X,x,K):
@@ -103,7 +103,7 @@ def non_linear_pnp_loss(XX,X,x,K):
     p1, p2, p3 = P[0,:].reshape((1,4)), P[1,:].reshape((1,4)), P[2,:].reshape((1,4))
     total_error = 0
     for i in range(len(X)):
-        X_i, x_i = X[i].reshape((1,4)), x[i].reshape((1,2))
+        X_i, x_i = X[i].reshape((4,1)), x[i].reshape((1,2))
         u, v = x_i[0,0], x_i[0,1]
         u_proj = np.divide(np.dot(p1,X_i),np.dot(p3,X_i))
         v_proj = np.divide(np.dot(p2,X_i),np.dot(p3,X_i))

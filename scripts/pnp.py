@@ -6,17 +6,17 @@ from utils import *
 def linear_pnp(X,x,K):
     # Making sure X (3D points) are in homogenous coordinates
     if X.shape[1] == 4:
-        X = X/(X[:,3])
+        X = X/(X[:,3].reshape((-1,1)))
     else:
         X = np.hstack((X,np.ones((X.shape[0],1))))
     # Making sure x (2D pixel) locations are in homogenous coordinates
     if x.shape[1] == 3:
-        x = x/(x[:,2])
+        x = x/(x[:,2].reshape((-1,1)))
     else:
         x = np.hstack((x,np.ones((x.shape[0],1))))
     K_inv = np.linalg.inv(K)
-    x_img_plane = np.dot(K_inv,x)
-    A = []
+    x_img_plane = np.dot(K_inv,x.T).T
+    A = None
     for i in range(X.shape[0]):
         X_i = X[i].reshape([1,4]).astype(np.float32)
         zero_vector = np.zeros((1,4))
@@ -25,10 +25,13 @@ def linear_pnp(X,x,K):
         X_tilde = np.vstack((np.hstack([X_i,zero_vector,zero_vector]),
                              np.hstack([zero_vector,X_i,zero_vector]),
                              np.hstack([zero_vector,zero_vector,X_i])))
-        A.append(np.cross(u_cross,X_tilde))
+        if i==0:
+            A = np.dot(u_cross,X_tilde)
+        else:
+            A = np.vstack((A,np.dot(u_cross,X_tilde)))
     A = np.array(A)
     U_A, S_A, V_A = np.linalg.svd(A)
-    P = V_A.T[-1].reshape((3,4))
+    P = V_A[-1].reshape((3,4))
     R, C = P[:,:3], P[:,3]
     U_R, S_R, V_R = np.linalg.svd(R)
     R = np.dot(U_R,V_R)
@@ -41,7 +44,7 @@ def linear_pnp(X,x,K):
     return R, C
 
 # Using PnP Ransac to get the best set of R, C using linear PnP
-def pnp_ransac(X,x,K,error_thresh=5,n_iter=1000):
+def pnp_ransac(X,x,K,error_thresh=10,n_iter=1000):
     best_num_inliers = 0
     best_R, best_C = None, None
     for i in range(n_iter):

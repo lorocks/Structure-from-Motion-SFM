@@ -30,7 +30,7 @@ def linear_triangulation(x1,x2,C1,C2,R1,R2,K1,K2):
 def non_linear_triangulation(X,x1,x2,C1,C2,R1,R2,K1,K2):
     # Making each 3D point is in homogenous coordinates i.e. [x,y,z,1]
     if X.shape[1] == 4:
-        X = X/(X[:,3])
+        X = X/(X[:,3].reshape((-1,1)))
     else:
         X = np.hstack((X,np.ones((X.shape[0],1))))
     X_optimized = []

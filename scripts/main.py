@@ -72,9 +72,9 @@ def main():
 
     for i in range(2,num_imgs):
         img_pts = feature_matrix[i,:,:].copy().reshape((-1,2)).astype(np.int32)
-        R_i, C_i = pnp_ransac(pts_3D.copy(),img_pts,K)
+        R_i, C_i = pnp_ransac(pts_3D,img_pts,K)
         print("Completed PnP Ransac for Image ",i)
-        R_i, C_i = non_linear_pnp(pts_3D.copy(),img_pts,K,R_i,C_i)
+        R_i, C_i = non_linear_pnp(pts_3D,img_pts,K,R_i,C_i)
         print("Completed Non-Linear PnP for Image ",i)
         all_RC.append([R_i,C_i])
         for j in range(i):
