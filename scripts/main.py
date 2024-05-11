@@ -82,9 +82,11 @@ def main():
             R1, C1, R2, C2 = all_RC[j][0], all_RC[j][1], all_RC[i][0], all_RC[i][1]
             X = linear_triangulation(img_ref_pts,img_pts,C1,C2,R1,R2,K,K)
             pts_3D = non_linear_triangulation(X,img_ref_pts,img_pts,C1,C2,R1,R2,K,K)
-        ### To Do ###
         pts_3D = bundle_adjustment(i,pts_3D,feature_matrix,all_RC,K)
-        #############
+
+    print("Finished Registering the Remaining Images")
+    
+    plot_3D_points(pts_3D)
 
 if __name__ == "__main__":
     main()

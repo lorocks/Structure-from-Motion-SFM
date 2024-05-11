@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import cv2
+import open3d as o3d
 from scipy.spatial.transform import Rotation
 
 # Loading all the image data
@@ -109,3 +110,14 @@ def non_linear_pnp_loss(XX,X,x,K):
         v_proj = np.divide(np.dot(p2,X_i),np.dot(p3,X_i))
         total_error += np.squeeze(np.square(v-v_proj) + np.square(u-u_proj))
     return total_error
+
+# A Function to Plot the 3D Point-Cloud
+def plot_3D_points(X):
+    if X.shape[1] == 4:
+        X = X/(X[:,3].reshape((-1,1)))
+        X = X[:,:-1]
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(X)
+    colors = np.array([[1,0,0] for _ in range(len(X.shape[0]))])
+    pcd.colors = o3d.utility.Vector3dVector(colors)
+    o3d.visualization.draw_geometries([pcd])
