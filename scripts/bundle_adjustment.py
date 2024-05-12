@@ -147,6 +147,7 @@ def bundle_adjustment(img_idx, points_3d, feature_matrix, all_RC, K):
 
     # Set the initial parameters for the optimization
     x0 = np.hstack((RC_list.flatten(), points_3d.flatten()))
+    print(RC_list.shape, points_3d.shape)
     # print("Initial Parameters: ",x0)
     # print("Shape of the Initial Parameters: ",x0.shape)
     
@@ -166,16 +167,22 @@ def bundle_adjustment(img_idx, points_3d, feature_matrix, all_RC, K):
     # res = least_squares(fun, x0, jac_sparsity=sparsity, verbose=2, args=(img_idx, num_points, feature_matrix.reshape(-1, 2), K))
 
     params = res.x
-    print(len(params))
     num_cameras = img_idx+1
     optimized_RC = params[:num_cameras*6].reshape((num_cameras, 6))
-    optimized_3D = params[num_cameras*6:].reshape((num_points, 3))
+    optimized_3D = params[num_cameras*6:].reshape((num_points, 4))
+
+    # optimized_RC = params[:len(RC_list.flatten())].reshape((num_cameras, 6))
+    # optimized_3D = params[len(RC_list.flatten()):].reshape((num_points, 3))
+
 
     optimized_C, optimized_R = [], []
+    optimized_RC_ret = []
     for i in range(num_cameras):
         R = Rotation.from_rotvec(optimized_RC[i][:3]).as_matrix()
         C = optimized_RC[i][3:].reshape(3,1)
         optimized_C.append(C)
         optimized_R.append(R)
+        optimized_RC_ret.append([R, C])
 
-    return optimized_R, optimized_C, optimized_3D
+    # return optimized_R, optimized_C, optimized_3D
+    return optimized_RC_ret, optimized_3D # => need to combine optimized_R & optimized_C into a single array

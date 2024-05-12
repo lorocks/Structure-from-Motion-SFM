@@ -84,7 +84,10 @@ def main():
             R1, C1, R2, C2 = all_RC[j][0], all_RC[j][1], all_RC[i][0], all_RC[i][1]
             X = linear_triangulation(img_ref_pts,img_pts,C1,C2,R1,R2,K,K)
             pts_3D = non_linear_triangulation(X,img_ref_pts,img_pts,C1,C2,R1,R2,K,K)
-        pts_3D = bundle_adjustment(i,pts_3D,feature_matrix,all_RC,K)
+        all_RC, pts_3D = bundle_adjustment(i,pts_3D,feature_matrix,all_RC,K)
+        # Bundle adjustment needs to return 3 things, optimized R, C and 3D pts
+        # From bundle will need to combine optimized R and optmized C into the same array, cause we are using it 
+        # as a singular array [[R, C], [R, C]] but bundle adjustment returns as separate [R, R] and [C, C]
 
     print("Finished Registering the Remaining Images")
     
