@@ -133,6 +133,7 @@ def bundle_adjustment(img_idx, points_3d, feature_matrix, all_RC, K):
 
     # Get a list of all the camera parameters for all images
     RC_list = []
+
     for i in range(len(all_RC)):
         R, C = all_RC[i]
         # Convert Rotation Matrix to Rotation Vector
@@ -140,6 +141,8 @@ def bundle_adjustment(img_idx, points_3d, feature_matrix, all_RC, K):
         # Create a list of camera parameters
         RC_i = [R_vec[0], R_vec[1], R_vec[2], C[0], C[1], C[2]]
         RC_list.append(RC_i)
+
+
     RC_list = np.array(RC_list).reshape(-1, 6)
 
     # Set the initial parameters for the optimization
@@ -157,12 +160,13 @@ def bundle_adjustment(img_idx, points_3d, feature_matrix, all_RC, K):
     # sparsity = np.ones((2*num_points, 6*(img_idx+1) + 3*num_points))
 
     # Setup the optimization problem
-    res = least_squares(fun, x0, verbose=2, x_scale='jac', ftol=1e-10, method='trf', 
-                        args=(img_idx, num_points, feature_matrix.reshape(-1, 2), K))
+    res = least_squares(fun, x0, verbose=2, x_scale='jac', ftol=1e-4, method='trf', 
+                        args=(img_idx, num_points, feature_matrix.reshape(-1, 2), K)) # twas ftol = 1e-10
 
     # res = least_squares(fun, x0, jac_sparsity=sparsity, verbose=2, args=(img_idx, num_points, feature_matrix.reshape(-1, 2), K))
 
     params = res.x
+    print(len(params))
     num_cameras = img_idx+1
     optimized_RC = params[:num_cameras*6].reshape((num_cameras, 6))
     optimized_3D = params[num_cameras*6:].reshape((num_points, 3))

@@ -51,7 +51,7 @@ def main():
 
     # camera_poses: [[R1,C1], [R2,C2], [R3,C3], [R4,C4]] where Ri: [3,3] and Ci: [3,1]
     camera_poses = get_all_camera_poses(F,K,K)
-    R1, C1 = np.eye(3), np.zeros((3,1))
+    R1, C1 = np.eye(3), np.zeros((3))
     X_set = []
     for i, R_C in enumerate(camera_poses):
         R2, C2 = R_C
@@ -70,6 +70,7 @@ def main():
 
     all_RC = [[R1,C1], [R2,C2]]
 
+
     for i in range(2,num_imgs):
         img_pts = feature_matrix[i,:,:].copy().reshape((-1,2)).astype(np.int32)
         R_i, C_i = pnp_ransac(pts_3D,img_pts,K)
@@ -77,6 +78,7 @@ def main():
         R_i, C_i = non_linear_pnp(pts_3D,img_pts,K,R_i,C_i)
         print("Completed Non-Linear PnP for Image ",i)
         all_RC.append([R_i,C_i])
+
         for j in range(i):
             img_ref_pts = feature_matrix[j,:,:].copy().reshape((-1,2)).astype(np.int32)
             R1, C1, R2, C2 = all_RC[j][0], all_RC[j][1], all_RC[i][0], all_RC[i][1]
