@@ -139,7 +139,10 @@ def bundle_adjustment(img_idx, points_3d, feature_matrix, all_RC, K):
         # Convert Rotation Matrix to Rotation Vector
         R_vec = Rotation.from_matrix(R).as_rotvec()
         # Create a list of camera parameters
-        RC_i = [R_vec[0], R_vec[1], R_vec[2], C[0], C[1], C[2]]
+        if isinstance(C[0], np.ndarray):
+            RC_i = [R_vec[0], R_vec[1], R_vec[2], C[0], C[1], C[2]]
+        else:
+            RC_i = [R_vec[0], R_vec[1], R_vec[2], C[0], C[1], C[2]]
         RC_list.append(RC_i)
 
 

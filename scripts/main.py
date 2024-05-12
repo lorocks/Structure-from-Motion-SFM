@@ -89,6 +89,8 @@ def main():
         # From bundle will need to combine optimized R and optmized C into the same array, cause we are using it 
         # as a singular array [[R, C], [R, C]] but bundle adjustment returns as separate [R, R] and [C, C]
 
+        # To speed up bundle adjustment might need more paramters in least_squares fn
+
     print("Finished Registering the Remaining Images")
     
     plot_3D_points(pts_3D)
