@@ -1,9 +1,74 @@
 import numpy as np
 from scipy.optimize import least_squares
-import scipy.spatial
-from scipy.spatial.transform import Rotation 
-from scipy.sparse import lil_matrix
+#from scipy.spatial.transform import Rotation 
+#from scipy.sparse import lil_matrix
+from utils import *
 
+# Projecting 3D points as 2D pixel coordinates for each camera pose as a flattened array
+def project_3D_points(X,all_RC,K):
+    if X.shape[1] == 4:
+        X = X/(X[:,3].reshape((-1,1)))
+    else:
+        X = np.hstack((X,np.ones((X.shape[0],1))))
+    x_proj = []
+    for i in range(len(all_RC)):
+        RC = all_RC[i]
+        R, C = RC
+        P_i = projection_matrix(K,R,C)
+        for j in range(X.shape[0]):
+            X_j = X[j,:].reshape((1,4)).T
+            x_ij_proj = np.dot(P_i,X_j).reshape((-1,3))
+            x_ij_proj = x_ij_proj/(x_ij_proj[:,2].reshape((-1,1)))
+            x_ij_proj = x_ij_proj[:,:2]
+            x_proj.append(x_ij_proj)
+    x_proj = np.array(x_proj).reshape((-1,2))
+    return x_proj
+
+# Loss function for Bundle Adjustment's Least Square's Optimizer
+def BA_loss(params,cam_idx,N,x,K):
+    num_cams = cam_idx + 1
+    RC_params = params[:num_cams*7].reshape((num_cams,7))
+    X = params[num_cams*7:].reshape((N,3))
+    all_RC = []
+    for i in range(num_cams):
+        RC_i = RC_params[i,:]
+        Q, C = RC_i[:4], np.array(RC_i[4:]).reshape((3,1))
+        R = quaternion_to_rotation(Q)
+        all_RC.append([R,C])
+    x_prior = x[:N*num_cams]
+    x_proj = project_3D_points(X,all_RC,K)
+    return (x_prior - x_proj).ravel()
+
+# Main Bundle Adjustment Function that returns a refined value of all the camera poses (R,C) and 3D points (X)
+def bundle_adjustment(cam_idx,X,feature_matrix,all_RC,K):
+    x = feature_matrix.reshape(-1,2)
+    all_RC_flat = []
+    for i in range(len(all_RC)):
+        RC = all_RC[i]
+        R_i, C_i = RC
+        Q_i = rotation_to_quaternion(R_i)
+        if isinstance(C_i[0],np.ndarray):
+            all_RC_flat.append([Q_i[0],Q_i[1],Q_i[2],Q_i[3],C_i[0][0],C_i[1][0],C_i[2][0]])
+        else:
+            all_RC_flat.append([Q_i[0],Q_i[1],Q_i[2],Q_i[3],C_i[0],C_i[1],C_i[2]])
+    all_RC_flat = np.array(all_RC_flat).reshape((-1,7)).flatten()
+    X_flat = X[:,:3].flatten()
+    params = np.hstack((all_RC_flat,X_flat))
+    result_ls = least_squares(BA_loss, params, verbose=2, x_scale='jac', ftol=1e-4, method='trf', 
+                        args=(cam_idx, int(X.shape[0]), x, K))
+    params_opt = result_ls.x
+    num_cams = cam_idx+1
+    RC_opt = params_opt[:num_cams*7].reshape((num_cams,7))
+    X_opt = params_opt[num_cams*7:].reshape((X.shape[0],3))
+    X_opt = np.hstack((X_opt,np.ones((X.shape[0],1))))
+    all_RC_opt = []
+    for i in range(num_cams):
+        Q, C = RC_opt[i,:4], np.array(RC_opt[i,4:]).reshape((3,1))
+        R = quaternion_to_rotation(Q)
+        all_RC_opt.append([R,C])
+    return all_RC_opt, X_opt
+
+'''
 def project(points_3d, camera_params, K):
     """
     Project 3D points to 2D using camera parameters
@@ -15,6 +80,8 @@ def project(points_3d, camera_params, K):
     Outputs:
     points_proj: Projected 2D points [N,2]
     """
+
+    # Use Projection Matrix
     
     def project_point(R, C, pts_3D, K):
         # Project the 3D points to 2D
@@ -68,7 +135,6 @@ def bundle_adjustment_sparsity(X, camera_num):
 
     return sparsity
 
-
 def fun(x0, camera_num, num_3d_points, points_2d, K):
     """
     Function to be optimized
@@ -111,7 +177,6 @@ def fun(x0, camera_num, num_3d_points, points_2d, K):
     residuals = (points_proj - points_2d).ravel()
 
     return residuals
-
 
 # Perform Bundle Adjustment to Improve the Estimate of the Reconstructed 3D point locations
 def bundle_adjustment(img_idx, points_3d, feature_matrix, all_RC, K):
@@ -190,3 +255,6 @@ def bundle_adjustment(img_idx, points_3d, feature_matrix, all_RC, K):
 
     # return optimized_R, optimized_C, optimized_3D
     return optimized_RC_ret, optimized_3D # => need to combine optimized_R & optimized_C into a single array
+'''
+
+    

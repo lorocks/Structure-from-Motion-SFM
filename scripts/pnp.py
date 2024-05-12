@@ -43,6 +43,17 @@ def linear_pnp(X,x,K):
     C = -np.linalg.inv(R).dot(C)
     return R, C
 
+# Reprojection Error while performing PnP Ransac
+# X should be of [N,4] and x of [N,2]
+def linear_pnp_error(X,x,K,R,C):
+    P = projection_matrix(K,R,C)
+    p1, p2, p3 = P[0,:].reshape((1,4)), P[1,:].reshape((1,4)), P[2,:].reshape((1,4))
+    u, v = x[0], x[1]
+    u_proj = np.divide(np.dot(p1,X),np.dot(p3,X))
+    v_proj = np.divide(np.dot(p2,X),np.dot(p3,X))
+    error = np.squeeze((v-v_proj) + (u-u_proj))
+    return float(np.linalg.norm(error))
+
 # Using PnP Ransac to get the best set of R, C using linear PnP
 def pnp_ransac(X,x,K,error_thresh=10,n_iter=1000):
     best_num_inliers = 0
@@ -60,6 +71,22 @@ def pnp_ransac(X,x,K,error_thresh=10,n_iter=1000):
             best_num_inliers = current_num_inliers
             best_R, best_C = R, C
     return best_R, best_C
+
+# Non-Linear PnP Loss Function
+# XX = [Q[0], Q[1], Q[2], Q[3], C[0], C[1], C[2]] --> Q is the quaternion and C is the translation vector of the camera center
+def non_linear_pnp_loss(XX,X,x,K):
+    Q, C = XX[:4], XX[4:].reshape(-1,1)
+    R = quaternion_to_rotation(Q)
+    P = projection_matrix(K,R,C)
+    p1, p2, p3 = P[0,:].reshape((1,4)), P[1,:].reshape((1,4)), P[2,:].reshape((1,4))
+    total_error = 0
+    for i in range(len(X)):
+        X_i, x_i = X[i].reshape((4,1)), x[i].reshape((1,2))
+        u, v = x_i[0,0], x_i[0,1]
+        u_proj = np.divide(np.dot(p1,X_i),np.dot(p3,X_i))
+        v_proj = np.divide(np.dot(p2,X_i),np.dot(p3,X_i))
+        total_error += np.squeeze(np.square(v-v_proj) + np.square(u-u_proj))
+    return total_error
 
 # Refines the estimate of R, C given the PnP Ransac by using non-linear optimzation
 def non_linear_pnp(X,x,K,R_init,C_init):
