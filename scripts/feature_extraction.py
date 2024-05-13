@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 # Finding the keypoint locations of the matched features of two images using their SIFT features
-def find_matches(keypoints1,descriptors1,keypoints2,descriptors2,matching_thresh=0.9):
+def find_matches(keypoints1,descriptors1,keypoints2,descriptors2,matching_thresh=0.95):
     bf = cv2.BFMatcher()
     matches = bf.knnMatch(descriptors1,descriptors2,k=2)
     good_matches = []
