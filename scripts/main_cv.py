@@ -30,15 +30,28 @@ def main(img_dir):
     #               [0, 1402, 174.427],
     #               [0, 0, 1]])
 
+    k1=-0.16762533591578163
+    k2=0.015365688221134153
+    k3=0.006560209455351331
+    p1=0.0014424610109027888
+    p2=9.519472036645519e-05
+
     # K = np.array([[700.45, 0, 649.385],
-    #               [0, 700.45, 339.603],
-    #               [0, 0, 1]])
+    #                 [0, 700.45, 339.603],
+    #                 [0, 0, 1]])
     
 
-    # # This one works best for now - turtle
-    # K = np.array([[1401.9, 0, 649.888],
-    #               [0, 1402, 333.853],
-    #               [0, 0, 1]])
+    # This one works best for now - turtle
+    K = np.array([[1401.9, 0, 649.888],
+                  [0, 1402, 333.853],
+                  [0, 0, 1]])
+
+    distortion = np.array([k1, k2, k3, p1, p2])
+
+    w = 1280
+    h = 720
+
+    K, roi = cv2.getOptimalNewCameraMatrix(K, distortion, (w,h), 1, (w,h))
     
     # This one works best for now - monument
     K = np.array([[2393.952166119461, -3.410605131648481e-13, 932.3821770809047 ],
@@ -146,4 +159,4 @@ def main(img_dir):
 
 
 if __name__ == "__main__":
-    main("../data/images/monument/")
+    main("../data/images/turtle/")
