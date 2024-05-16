@@ -143,7 +143,12 @@ def main(img_dir):
         linking_matrix = find_features_to_linking_array(img2, next_img)
 
         print(P1.shape, P2.shape, matches_1.shape, matches_2.shape)
-        matches_1, matches_2, pts_3D = cv_triangulation(P1, P2, matches_1, matches_2)
+        # matches_1, matches_2, pts_3D = cv_triangulation(P1, P2, matches_1, matches_2)
+
+        cloud = cv2.triangulatePoints(P1, P2, matches_1.T, matches_2.T)
+        matches_2 = matches_2.T
+        pts_3D = cloud / cloud[3]
+
         # matches_2.T
         if i == 0:
             pts_3D = pts_3D.T[:, :3]
@@ -176,12 +181,17 @@ def main(img_dir):
         P3 = np.matmul(K, T2)
 
         mask1, mask2, pts_3D = cv_triangulation(P2, P3, mask1, mask2)
+
+        # change
+        # cloud = cv2.triangulatePoints(P1, P2, mask1.T, mask2.T)
+        # pts_3D = cloud / cloud[3]
+
         pts_3D = pts_3D.T[:, :3]
 
         poses = np.hstack((poses, P3.ravel()))
 
         points = np.vstack((points, pts_3D))
-        points_left = np.array(mask2, dtype=np.int32)
+        points_left = np.array(mask2, dtype=np.int32) # .T chnage
         color_vector = np.array([next_img[l[1], l[0]] for l in points_left.T])
         colors = np.vstack((colors, color_vector))
 
