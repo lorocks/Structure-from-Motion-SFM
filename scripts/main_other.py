@@ -12,37 +12,9 @@ from fmatrix_ransac import *
 from fundamental_matrix import *
 from pnp import *
 from triangulation import *
+from save_3D import *
 from utils import *
 
-### Need change later
-def to_ply(point_clouds, colors):
-    out_points = point_clouds.reshape(-1, 3) * 200
-    out_colors = colors.reshape(-1, 3)
-    # out_colors = np.zeros(out_points.shape)
-    print(f"out_colors shape: {out_colors.shape}, out_points shape: {out_points.shape}")
-    verts = np.hstack([out_points, out_colors])
-
-    mean = np.mean(verts[:, :3], axis=0)
-    scaled_verts = verts[:, :3] - mean
-    dist = np.sqrt(scaled_verts[:, 0] ** 2 + scaled_verts[:, 1] ** 2 + scaled_verts[:, 2] ** 2)
-    indx = np.where(dist < np.mean(dist) + 300)
-
-    verts = verts[indx]
-    ply_header = '''ply
-        format ascii 1.0
-        element vertex %(vert_num)d
-        property float x
-        property float y
-        property float z
-        property uchar blue
-        property uchar green
-        property uchar red
-        end_header
-        '''
-    
-    with open('res.ply', 'w') as f:
-        f.write(ply_header % dict(vert_num=len(verts)))
-        np.savetxt(f, verts, '%f %f %f %d %d %d')
 
 ### Need change later
 def correspondences(img_points_1, img_points_2, img_points_3):
@@ -100,7 +72,7 @@ def main(img_dir):
     linking_matrix = find_features_to_linking_array(img1, img2)
     print("Created the Linking for the First Two Images Matrix")
 
-    F, best_matches = FMatrix_RANSAC(linking_matrix.copy(),8,0.005)
+    F, best_matches = FMatrix_RANSAC(linking_matrix.copy(),8,0.5)
 
     print("Calculated the Fundamental Matrix for the First Two Images using RANSAC. Printing it below")
     print(F)
@@ -132,63 +104,74 @@ def main(img_dir):
 
     for i in range(len(imgs) - 2):
         next_img = imgs[i+2]
-        linking_matrix = find_features_to_linking_array(img2, next_img)
+        linking_matrix = find_features_to_linking_array(img2, next_img, 0.7)
 
-        # matches_1, matches_2, pts_3D = cv_triangulation(P1, P2, matches_1, matches_2)
+        # CAn use the custom triangulation fn if able to disambiguate the projection into K, R and T
         pts_3D = cv2.triangulatePoints(P1, P2, matches_1.T, matches_2.T)
-        matches_1 = matches_1.T
-        matches_2 = matches_2.T
         pts_3D = pts_3D / pts_3D[3]
 
         if i == 0:
             pts_3D = pts_3D.T[:, :3]
+            _, _, _, inliers = cv2.solvePnPRansac(pts_3D, matches_2, K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
+            if inliers is not None:
+                pts_3D = pts_3D[inliers[:, 0]]
+                matches_2 = matches_2[inliers[:, 0]]
+
         else:
             pts_3D = cv2.convertPointsFromHomogeneous(pts_3D.T)
             pts_3D = pts_3D[:, 0, :]
             
-        corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2.T, linking_matrix[:, 0:2], linking_matrix[:, 2:4])
-        
-        corr_points_3 = linking_matrix[:, 2:4][corr_points_2]
-        corr_points_cur = linking_matrix[:, 0:2][corr_points_2]
 
-        _, R, T, inliers = cv2.solvePnPRansac(pts_3D[corr_point1], corr_points_3, K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
+        corr_points1 = []
+        corr_points2 = []
+
+        for j in range(matches_2.shape[0]):
+            if np.where(linking_matrix[:, 0:2] == matches_2[j, :])[0].size != 0:
+                corr_points1.append(j)
+                corr_points2.append(np.where(linking_matrix[:, 0:2] == matches_2[j, :])[0][0])
+        
+        mask1 = np.ma.array(linking_matrix[:, 0:2], mask=False)
+        mask1.mask[corr_points2] = True
+        mask1 = mask1.compressed()
+        mask1 = mask1.reshape(int(mask1.shape[0] / 2), 2)
+
+        mask2 = np.ma.array(linking_matrix[:, 2:4], mask=False)
+        mask2.mask[corr_points2] = True
+        mask2 = mask2.compressed()
+        mask2 = mask2.reshape(int(mask2.shape[0] / 2), 2)
+
+        _, R, T, inliers = cv2.solvePnPRansac(pts_3D[corr_points1], linking_matrix[:, 2:4][corr_points2], K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
         R = Rotation.from_rotvec(R.reshape((1,3))).as_matrix().reshape((3,3))
 
         print("Completed PnP Ransac for Image ",i+2)
 
         if inliers is not None:
-            corr_points_3 = corr_points_3[inliers[:, 0]]
             pts_3D = pts_3D[inliers[:, 0]]
-            corr_points_cur = corr_points_cur[inliers[:, 0]]
 
         T2 = np.hstack((R, T))
         P3 = np.matmul(K, T2)
 
-        # mask1, mask2, pts_3D = cv_triangulation(P2, P3, mask1, mask2)
-        pts_3D = cv2.triangulatePoints(P1, P2, mask1.T, mask2.T)
-        mask2 = mask2.T
+        # CAn use the custom triangulation fn if able to disambiguate the projection into K, R and T
+        pts_3D = cv2.triangulatePoints(P2, P3, mask1.T, mask2.T)
         pts_3D = pts_3D / pts_3D[3]
+
         pts_3D = pts_3D.T[:, :3]
-
-        poses = np.hstack((poses, P3.ravel()))
-
         points = np.vstack((points, pts_3D))
-        points_left = np.array(mask2, dtype=np.int32)
+        points_left = np.array(mask2.T, dtype=np.int32)
         color_vector = np.array([next_img[l[1], l[0]] for l in points_left.T])
         colors = np.vstack((colors, color_vector))
-
-        T1 = np.copy(T2)
-        P1 = np.copy(P2)
 
         img1 = np.copy(img2)
         img2 = np.copy(next_img)
         matches_1 = np.copy(linking_matrix[:, 0:2])
         matches_2 = np.copy(linking_matrix[:, 2:4])
+        T1 = np.copy(T2)
+        P1 = np.copy(P2)
         P2 = np.copy(P3)
 
         print("Successfully Registered Image ",i+3)
 
-    to_ply(points, colors)
+    save_ply(points, colors, f'../data/output/res_{img_dir.split("/")[-2]}.ply')
 
 
 if __name__ == "__main__":

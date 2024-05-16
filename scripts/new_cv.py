@@ -16,31 +16,6 @@ from save_3D import *
 from utils import *
 
 
-### Need change later
-def correspondences(img_points_1, img_points_2, img_points_3):
-    cr_points_1 = []
-    cr_points_2 = []
-
-    for i in range(img_points_1.shape[0]):
-        a = np.where(img_points_2 == img_points_1[i, :])
-        if a[0].size != 0:
-            cr_points_1.append(i)
-            cr_points_2.append(a[0][0])
-
-    mask_array_1 = np.ma.array(img_points_2, mask=False)
-    mask_array_1.mask[cr_points_2] = True
-    mask_array_1 = mask_array_1.compressed()
-    mask_array_1 = mask_array_1.reshape(int(mask_array_1.shape[0] / 2), 2)
-
-    mask_array_2 = np.ma.array(img_points_3, mask=False)
-    mask_array_2.mask[cr_points_2] = True
-    mask_array_2 = mask_array_2.compressed()
-    mask_array_2 = mask_array_2.reshape(int(mask_array_2.shape[0] / 2), 2)
-
-    return np.array(cr_points_1), np.array(cr_points_2), mask_array_1, mask_array_2
-
-
-
 # Main Implementation
 def main(img_dir):
     imgs = load_imgs(img_dir)
@@ -65,7 +40,7 @@ def main(img_dir):
     #               [0, 1402, 333.853],
     #               [0, 0, 1]])
     
-    # # This one works best for now - monument
+    # This one works best for now - monument
     K = np.array([[2393.952166119461, -3.410605131648481e-13, 932.3821770809047 ],
                   [0, 2398.118540286656, 628.2649953288065],
                   [0, 0, 1]])
@@ -79,7 +54,7 @@ def main(img_dir):
     points = np.zeros((1, 3))
     colors = np.zeros((1, 3))
 
-    linking_matrix = find_features_to_linking_array(img1, img2)
+    linking_matrix = find_features_to_linking_array(img1, img2, 0.7)
     print("Created the Linking for the First Two Images Matrix")
 
     essential_matrix, em_mask = cv2.findEssentialMat(linking_matrix[:, 0:2], linking_matrix[:, 2:4], K, method=cv2.RANSAC, prob=0.999, threshold=0.4, mask=None)
@@ -102,9 +77,7 @@ def main(img_dir):
 
     for i in range(len(imgs) - 2):
         next_img = imgs[i+2]
-        linking_matrix = find_features_to_linking_array(img2, next_img)
-
-        print(P1.shape, P2.shape, matches_1.shape, matches_2.shape)
+        linking_matrix = find_features_to_linking_array(img2, next_img, 0.7)
 
         pts_3D = cv2.triangulatePoints(P1, P2, matches_1.T, matches_2.T)
         pts_3D = pts_3D / pts_3D[3]
@@ -116,24 +89,36 @@ def main(img_dir):
                 pts_3D = pts_3D[inliers[:, 0]]
                 matches_2 = matches_2[inliers[:, 0]]
 
-            corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2, linking_matrix[:, 0:2], linking_matrix[:, 2:4])
         else:
             pts_3D = cv2.convertPointsFromHomogeneous(pts_3D.T)
             pts_3D = pts_3D[:, 0, :]
-            corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2, linking_matrix[:, 0:2], linking_matrix[:, 2:4])
-        
-        corr_points_3 = linking_matrix[:, 2:4][corr_points_2]
-        corr_points_cur = linking_matrix[:, 0:2][corr_points_2]
+            
 
-        _, R, T, inliers = cv2.solvePnPRansac(pts_3D[corr_point1], corr_points_3, K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
+        corr_points1 = []
+        corr_points2 = []
+
+        for j in range(matches_2.shape[0]):
+            if np.where(linking_matrix[:, 0:2] == matches_2[j, :])[0].size != 0:
+                corr_points1.append(j)
+                corr_points2.append(np.where(linking_matrix[:, 0:2] == matches_2[j, :])[0][0])
+        
+        mask1 = np.ma.array(linking_matrix[:, 0:2], mask=False)
+        mask1.mask[corr_points2] = True
+        mask1 = mask1.compressed()
+        mask1 = mask1.reshape(int(mask1.shape[0] / 2), 2)
+
+        mask2 = np.ma.array(linking_matrix[:, 2:4], mask=False)
+        mask2.mask[corr_points2] = True
+        mask2 = mask2.compressed()
+        mask2 = mask2.reshape(int(mask2.shape[0] / 2), 2)
+
+        _, R, T, inliers = cv2.solvePnPRansac(pts_3D[corr_points1], linking_matrix[:, 2:4][corr_points2], K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
         R = Rotation.from_rotvec(R.reshape((1,3))).as_matrix().reshape((3,3))
 
         print("Completed PnP Ransac for Image ",i+2)
 
         if inliers is not None:
-            corr_points_3 = corr_points_3[inliers[:, 0]]
             pts_3D = pts_3D[inliers[:, 0]]
-            corr_points_cur = corr_points_cur[inliers[:, 0]]
 
         T2 = np.hstack((R, T))
         P3 = np.matmul(K, T2)
@@ -157,7 +142,7 @@ def main(img_dir):
 
         print("Successfully Registered Image ",i+3)
 
-    save_ply(points, colors, '../data/output/res.ply')
+    save_ply(points, colors, f'../data/output/cv_res_{img_dir.split("/")[-2]}.ply')
 
 
 if __name__ == "__main__":

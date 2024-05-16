@@ -70,7 +70,7 @@ def main():
     linking_matrix = find_features_to_linking_array(img1, img2)
 
     # F has shape [3,3]
-    F, best_matches = FMatrix_RANSAC(linking_matrix.copy(),8,0.002)
+    F, best_matches = FMatrix_RANSAC(linking_matrix.copy(),8,0.5)
 
     print("Calculated the Fundamental Matrix for the First Two Images using RANSAC. Printing it below")
     print(F)
