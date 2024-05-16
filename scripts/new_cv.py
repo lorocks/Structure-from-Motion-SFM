@@ -125,8 +125,12 @@ def main(img_dir):
     matches_2 = linking_matrix[:, 2:4][em_mask.ravel() == 1]
 
     _, R2, C2, em_mask = cv2.recoverPose(essential_matrix, matches_1, matches_2, K)
-    matches_1 = matches_1[em_mask.ravel() > 0]
-    matches_2 = matches_2[em_mask.ravel() > 0]
+    matches_1_temp = matches_1[em_mask.ravel() > 0]
+    matches_2_temp = matches_2[em_mask.ravel() > 0]
+
+    if matches_1_temp.shape[0] != 0:
+        matches_1 = matches_1_temp
+        matches_2 = matches_2_temp
 
     T2[:3, :3] = np.matmul(R2, T1[:3, :3])
     T2[:3, 3] = T1[:3, 3] + np.matmul(T1[:3, :3], C2.ravel())
@@ -146,13 +150,13 @@ def main(img_dir):
         # matches_1, matches_2, pts_3D = cv_triangulation(P1, P2, matches_1, matches_2)
 
         cloud = cv2.triangulatePoints(P1, P2, matches_1.T, matches_2.T)
-        matches_2 = matches_2.T
+        # matches_2 = matches_2.T
         pts_3D = cloud / cloud[3]
 
         # matches_2.T
         if i == 0:
             pts_3D = pts_3D.T[:, :3]
-            matches_2 = matches_2.T
+            # matches_2 = matches_2.T
             _, _, _, inliers = cv2.solvePnPRansac(pts_3D, matches_2, K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
             if inliers is not None:
                 pts_3D = pts_3D[inliers[:, 0]]
@@ -162,7 +166,7 @@ def main(img_dir):
         else:
             pts_3D = cv2.convertPointsFromHomogeneous(pts_3D.T)
             pts_3D = pts_3D[:, 0, :]
-            corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2.T, linking_matrix[:, 0:2], linking_matrix[:, 2:4])
+            corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2, linking_matrix[:, 0:2], linking_matrix[:, 2:4]) # was .T match
         
         corr_points_3 = linking_matrix[:, 2:4][corr_points_2]
         corr_points_cur = linking_matrix[:, 0:2][corr_points_2]
@@ -210,4 +214,4 @@ def main(img_dir):
 
 
 if __name__ == "__main__":
-    main("../data/images/monument/")
+    main("../data/images/front/")
