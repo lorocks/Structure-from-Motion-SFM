@@ -123,15 +123,6 @@ def main(img_dir):
     # X_set: [X1, X2, X3, X4] where Xi: [N,3]
     R2, C2, pts_3D = best_camera_pose(X_set,camera_poses) # pts_3D: [N,3]
 
-    # ### That guy stuff
-    # essential_matrix, em_mask = cv2.findEssentialMat(linking_matrix[:, 0:2], linking_matrix[:, 2:4], K, method=cv2.RANSAC, prob=0.999, threshold=0.4, mask=None)
-    # matches_1 = linking_matrix[:, 0:2][em_mask.ravel() == 1]
-    # matches_2 = linking_matrix[:, 2:4][em_mask.ravel() == 1]
-
-    # _, R2, C2, em_mask = cv2.recoverPose(essential_matrix, matches_1, matches_2, K)
-    # matches_1 = matches_1[em_mask.ravel() > 0]
-    # matches_2 = matches_2[em_mask.ravel() > 0]
-
     T2[:3, :3] = np.matmul(R2, T1[:3, :3])
     T2[:3, 3] = T1[:3, 3] + np.matmul(T1[:3, :3], C2.ravel())
     P2 = np.matmul(K, T2)
@@ -140,26 +131,26 @@ def main(img_dir):
 
     print("Registered the First Two Images Together")
 
+    matches_1 = best_matches[:, 0:2]
+    matches_2 = best_matches[:, 2:4]
+
     for i in range(len(imgs) - 2):
         next_img = imgs[i+2]
         linking_matrix = find_features_to_linking_array(img2, next_img)
 
-        
-        # matches_2.T
+        # matches_1, matches_2, pts_3D = cv_triangulation(P1, P2, matches_1, matches_2)
+        pts_3D = cv2.triangulatePoints(P1, P2, matches_1.T, matches_2.T)
+        matches_1 = matches_1.T
+        matches_2 = matches_2.T
+        pts_3D = pts_3D / pts_3D[3]
+
         if i == 0:
-            matches_1, matches_2, pts_3D = cv_triangulation(P1, P2, best_matches[:, 0:2], best_matches[:, 2:4])
             pts_3D = pts_3D.T[:, :3]
-            matches_2 = matches_2.T
-            # _, _, _, inliers = cv2.solvePnPRansac(pts_3D, matches_2, K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
-            # if inliers is not None:
-            #     pts_3D = pts_3D[inliers[:, 0]]
-            #     matches_2 = matches_2[inliers[:, 0]]
-            corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2, linking_matrix[:, 0:2], linking_matrix[:, 2:4])
         else:
-            matches_1, matches_2, pts_3D = cv_triangulation(P1, P2, matches_1, matches_2)
             pts_3D = cv2.convertPointsFromHomogeneous(pts_3D.T)
             pts_3D = pts_3D[:, 0, :]
-            corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2.T, linking_matrix[:, 0:2], linking_matrix[:, 2:4])
+            
+        corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2.T, linking_matrix[:, 0:2], linking_matrix[:, 2:4])
         
         corr_points_3 = linking_matrix[:, 2:4][corr_points_2]
         corr_points_cur = linking_matrix[:, 0:2][corr_points_2]
@@ -177,7 +168,10 @@ def main(img_dir):
         T2 = np.hstack((R, T))
         P3 = np.matmul(K, T2)
 
-        mask1, mask2, pts_3D = cv_triangulation(P2, P3, mask1, mask2)
+        # mask1, mask2, pts_3D = cv_triangulation(P2, P3, mask1, mask2)
+        pts_3D = cv2.triangulatePoints(P1, P2, mask1.T, mask2.T)
+        mask2 = mask2.T
+        pts_3D = pts_3D / pts_3D[3]
         pts_3D = pts_3D.T[:, :3]
 
         poses = np.hstack((poses, P3.ravel()))
