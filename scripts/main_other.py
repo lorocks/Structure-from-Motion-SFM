@@ -145,12 +145,11 @@ def main(img_dir):
         if i == 0:
             matches_1, matches_2, pts_3D = cv_triangulation(P1, P2, best_matches[:, 0:2], best_matches[:, 2:4])
             pts_3D = pts_3D.T[:, :3]
-            # matches_2 = matches_2.T
+            matches_2 = matches_2.T
             # _, _, _, inliers = cv2.solvePnPRansac(pts_3D, matches_2, K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
             # if inliers is not None:
             #     pts_3D = pts_3D[inliers[:, 0]]
             #     matches_2 = matches_2[inliers[:, 0]]
-
             corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2, linking_matrix[:, 0:2], linking_matrix[:, 2:4])
         else:
             matches_1, matches_2, pts_3D = cv_triangulation(P1, P2, matches_1, matches_2)
