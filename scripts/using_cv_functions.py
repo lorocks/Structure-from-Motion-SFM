@@ -71,9 +71,11 @@ def main():
     print("Registered the First Two Images Together")
 
     all_RC = [[R1,C1], [R2,C2]]
+    # print(pts_3D[:, :3])
 
     for i in range(2,num_imgs):
         img_pts = feature_matrix[i,:,:].copy().reshape((-1,2)).astype(np.float32)
+        print(np.array(pts_3D[:, :3]).shape, np.array(img_pts).shape)
         _, R_i, C_i = cv2.solvePnP(pts_3D[:,:3],img_pts,K,np.array([0,0,0,0]))
         R_i = Rotation.from_rotvec(R_i.reshape((1,3))).as_matrix().reshape((3,3))
         C_i = C_i.reshape((3,1))
@@ -86,8 +88,9 @@ def main():
             triangle_points = cv2.triangulatePoints(P1, P2, np.float32(img_ref_pts.reshape((2,-1))), np.float32(img_pts.reshape((2,-1))))
             X = np.array(triangle_points)[0:3,:].reshape((-1,3))
             pts_3D = X
-        #all_RC, pts_3D = bundle_adjustment(i,X,feature_matrix,all_RC,K)
+        # all_RC, pts_3D = bundle_adjustment(i,X,feature_matrix,all_RC,K)
         print("Successfully Registered Image ",i+1)
+        # print(pts_3D[:, :3])
     print("Finished Registering all the Images")
     
     print("Ploting thw 3D Point-Cloud in a new Open3D Window")

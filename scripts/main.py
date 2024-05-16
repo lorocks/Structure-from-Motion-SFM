@@ -82,12 +82,12 @@ def main():
             R1, C1, R2, C2 = all_RC[j][0], all_RC[j][1], all_RC[i][0], all_RC[i][1]
             X = linear_triangulation(img_ref_pts,img_pts,C1,C2,R1,R2,K,K)
             X = non_linear_triangulation(X,img_ref_pts,img_pts,C1,C2,R1,R2,K,K)
-        all_RC, pts_3D = bundle_adjustment(i,X,feature_matrix,all_RC,K)
+        # all_RC, pts_3D = bundle_adjustment(i,X,feature_matrix,all_RC,K)
         print("Successfully Registered Image ",i+1)
     print("Finished Registering all the Images")
     
     print("Ploting thw 3D Point-Cloud in a new Open3D Window")
-    plot_3D_points(pts_3D)
+    plot_3D_points(X)
 
 if __name__ == "__main__":
     main()

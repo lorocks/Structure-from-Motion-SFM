@@ -59,6 +59,19 @@ def construct_feature_matrix(images_dir,reference_img_name):
     feature_matrix = np.array(feature_matrix).reshape(len(image_files),-1,2)
     return feature_matrix # feature_matrix has a shape [N,M,2] --> N: total nnumber of images, M: total number of common features
 
+def find_features_to_linking_array(img0, img1):
+    sift = cv2.SIFT_create()
+    img0_gray = cv2.cvtColor(img0, cv2.COLOR_BGR2GRAY)
+    img1_gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+    reference_keypoints, reference_descriptors = sift.detectAndCompute(img0_gray, None)
+    ireference_keypoints, img_descriptors = sift.detectAndCompute(img1_gray, None)
+
+    features0, features1 = find_matches(reference_keypoints,reference_descriptors,ireference_keypoints,img_descriptors, 0.65)
+
+    linking_matrix = np.array(np.hstack((np.array(features0), np.array(features1))))
+
+    return linking_matrix
+
 
 # Extract featurees and save to file
 def extract_features_to_file(images_dir):

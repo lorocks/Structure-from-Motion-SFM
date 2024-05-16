@@ -21,7 +21,7 @@ def FMatrix_RANSAC(points,sample_size,threshold):
     # Set maximum iteration number
     max_iteration = 1000
     # Set minimum iteration number
-    min_iteration = 1000
+    min_iteration = 300
     # Iteration counter
     iteration = 0
     # Store count of maximum number of inliers
@@ -79,9 +79,9 @@ def FMatrix_RANSAC(points,sample_size,threshold):
             if iteration < min_iteration and max_iteration < min_iteration:
                 max_iteration = min_iteration
         max_iteration = int(max_iteration)
-        # print("Max Iterations:", max_iteration, "Iteration Num:", iteration, "Inlier Count:", inlier_count_max, "Long Iter Value:", long_iter, "Long Iter Count:", long_iter_count)
+        print("Max Iterations:", max_iteration, "Iteration Num:", iteration, "Inlier Count:", inlier_count_max, "Long Iter Value:", long_iter, "Long Iter Count:", long_iter_count)
         iteration+=1
-        if iteration > 10000:
+        if iteration > 1000:
             break
     #print(inlier_count_max, len(best_inliers))
     return best_fit, best_inliers # Returns 3x3 np array, and Nx4 np array

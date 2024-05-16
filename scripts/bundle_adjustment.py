@@ -54,7 +54,7 @@ def bundle_adjustment(cam_idx,X,feature_matrix,all_RC,K):
     all_RC_flat = np.array(all_RC_flat).reshape((-1,7)).flatten()
     X_flat = X[:,:3].flatten()
     params = np.hstack((all_RC_flat,X_flat))
-    result_ls = least_squares(BA_loss, params, verbose=2, x_scale='jac', ftol=1e-4, method='trf', 
+    result_ls = least_squares(BA_loss, params, verbose=2, x_scale='jac', ftol=1e-1, method='trf', 
                         args=(cam_idx, int(X.shape[0]), x, K))
     params_opt = result_ls.x
     num_cams = cam_idx+1

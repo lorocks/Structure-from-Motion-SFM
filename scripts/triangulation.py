@@ -61,3 +61,9 @@ def non_linear_triangulation(X,x1,x2,C1,C2,R1,R2,K1,K2):
     X_optimized = np.array(X_optimized).astype(np.float32).reshape((-1,4))
     X_optimized = X_optimized/(X_optimized[:,3].reshape(-1,1))
     return X_optimized # 3D coordinates as shape [N,4], Each coordinate is of the form [x, y, z, 1]
+
+### Needs changes
+def cv_triangulation(point_2d_1, point_2d_2, projection_matrix_1, projection_matrix_2):
+    pt_cloud = cv2.triangulatePoints(point_2d_1, point_2d_2, projection_matrix_1.T, projection_matrix_2.T)
+    
+    return projection_matrix_1.T, projection_matrix_2.T, (pt_cloud / pt_cloud[3])
