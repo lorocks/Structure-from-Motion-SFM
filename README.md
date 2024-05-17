@@ -46,7 +46,7 @@ A Zed Camera 1 was used to obtain calibrated images of a scene and the pipeline 
 </p>
 
 ## Executing the Code
-Python file should be executed within the `scripts/` directory for proper working. For example, if you were to run the `main_cv.py file`, you would execute the following command.
+Python file should be executed within the `scripts/` directory for proper working. For example, if you were to run the `main_cv.py` file, you would execute the following command.
 
 ```sh
     python3 scripts/main_cv.py
@@ -72,7 +72,7 @@ A similar reconstruction for a fountain image dataset is displayed below.
   <img src="result_imgs/fountain_result.png"/>
 </p>
 
-The similar 3D reconstruction for Testudo on the University of Maryland Campus along with the output of the Spatial Mapping API of the Zed 1 ADK Camera is shown below.
+The similar 3D reconstruction for Testudo on the University of Maryland Campus along with the output of the Spatial Mapping API of the Zed 1 SDK Camera is shown below.
 
 <p align="center">
   <img src="result_imgs/testudo_result.png"/>
