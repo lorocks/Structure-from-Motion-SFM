@@ -16,29 +16,6 @@ from save_3D import *
 from utils import *
 
 
-### Need change later
-def correspondences(img_points_1, img_points_2, img_points_3):
-    cr_points_1 = []
-    cr_points_2 = []
-
-    for i in range(img_points_1.shape[0]):
-        a = np.where(img_points_2 == img_points_1[i, :])
-        if a[0].size != 0:
-            cr_points_1.append(i)
-            cr_points_2.append(a[0][0])
-
-    mask_array_1 = np.ma.array(img_points_2, mask=False)
-    mask_array_1.mask[cr_points_2] = True
-    mask_array_1 = mask_array_1.compressed()
-    mask_array_1 = mask_array_1.reshape(int(mask_array_1.shape[0] / 2), 2)
-
-    mask_array_2 = np.ma.array(img_points_3, mask=False)
-    mask_array_2.mask[cr_points_2] = True
-    mask_array_2 = mask_array_2.compressed()
-    mask_array_2 = mask_array_2.reshape(int(mask_array_2.shape[0] / 2), 2)
-
-    return np.array(cr_points_1), np.array(cr_points_2), mask_array_1, mask_array_2
-
 
 
 # Main Implementation

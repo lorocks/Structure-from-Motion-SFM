@@ -23,40 +23,76 @@ def main(img_dir):
     img1 = imgs[0]
     img2 = imgs[1]
 
+
+
+    img_type = img_dir.split("/")[-2]
+
+    if img_type == "2kturtle":
+        img1 = img1[:, :int(img1.shape[1]/2)]
+        img2 = img2[:, :int(img2.shape[1]/2)]
+
     print("Image 1 Shape: ",img1.shape)
     print("Image 2 Shape: ",img2.shape)
 
-    # K = np.array([[1401.9, 0, 340.444],
-    #               [0, 1402, 174.427],
-    #               [0, 0, 1]])
 
-    k1=-0.16762533591578163
-    k2=0.015365688221134153
-    k3=0.006560209455351331
-    p1=0.0014424610109027888
-    p2=9.519472036645519e-05
 
-    # K = np.array([[700.45, 0, 649.385],
-    #                 [0, 700.45, 339.603],
+    # ZED cam parameters
+    # k1=-0.16762533591578163
+    # k2=0.015365688221134153
+    # k3=0.006560209455351331
+    # p1=0.0014424610109027888
+    # p2=9.519472036645519e-05
+
+    # K = np.array([[1413.44, 0, 1128.53],
+    #                 [0, 1412.73, 588.368],
+    #                 [0, 0, 1]])
+    # K = np.array([[1413.44, 0, 1104.0],
+    #                 [0, 1412.73, 621.0],
     #                 [0, 0, 1]])
     
 
-    # This one works best for now - turtle
-    K = np.array([[1401.9, 0, 649.888],
-                  [0, 1402, 333.853],
-                  [0, 0, 1]])
+   
+    # distortion = np.array([k1, k2, k3, p1, p2])
 
-    distortion = np.array([k1, k2, k3, p1, p2])
+    # w = 1280
+    # h = 720
 
-    w = 1280
-    h = 720
+    # K, roi = cv2.getOptimalNewCameraMatrix(K, distortion, (w,h), 1, (w,h))
 
-    K, roi = cv2.getOptimalNewCameraMatrix(K, distortion, (w,h), 1, (w,h))
+
+
+     # # This one works best for now - turtle
+    # K = np.array([[1401.9, 0, 649.888],
+    #               [0, 1402, 333.853],
+    #               [0, 0, 1]])
+
     
     # This one works best for now - monument
     K = np.array([[2393.952166119461, -3.410605131648481e-13, 932.3821770809047 ],
                   [0, 2398.118540286656, 628.2649953288065],
                   [0, 0, 1]])
+
+
+    # # Castle, entry, fountain
+    # K = np.array([[2759.48, 0, 1520.69], 
+    #             [0, 2764.16, 1006.81], 
+    #             [0, 0, 1]])
+
+
+    # 
+
+
+    # Spderman, box and juice?
+    # K = np.array([[597.522, 0.0, 312.885],
+    #  [0.0, 597.522, 239.870],
+    #  [0.0, 0.0, 1.0]])
+
+
+
+    # # cmsc
+    # K = np.array([[568.996140852, 0, 643.21055941],
+    #               [0, 568.988362396, 477.982801038],
+    #               [0, 0, 1]])
 
       
     T1 = np.hstack((np.identity(3), np.array([[0], [0], [0]])))
@@ -70,7 +106,7 @@ def main(img_dir):
     linking_matrix = find_features_to_linking_array(img1, img2, 0.7)
     print("Created the Linking for the First Two Images Matrix")
 
-    essential_matrix, em_mask = cv2.findEssentialMat(linking_matrix[:, 0:2], linking_matrix[:, 2:4], K, method=cv2.RANSAC, prob=0.999, threshold=0.4, mask=None)
+    essential_matrix, em_mask = cv2.findEssentialMat(linking_matrix[:, 0:2], linking_matrix[:, 2:4], K, method=cv2.RANSAC, prob=0.999, threshold=1, mask=None)
     matches_1 = linking_matrix[:, 0:2][em_mask.ravel() == 1]
     matches_2 = linking_matrix[:, 2:4][em_mask.ravel() == 1]
 
@@ -78,10 +114,11 @@ def main(img_dir):
     matches_1_temp = matches_1[em_mask.ravel() > 0]
     matches_2_temp = matches_2[em_mask.ravel() > 0]
 
+    # if matches_1_temp.shape[0] >= 4:
     if matches_1_temp.shape[0] != 0:
         matches_1 = matches_1_temp
         matches_2 = matches_2_temp
-
+    
     T2[:3, :3] = np.matmul(R2, T1[:3, :3])
     T2[:3, 3] = T1[:3, 3] + np.matmul(T1[:3, :3], C2.ravel())
     P2 = np.matmul(K, T2)
@@ -128,6 +165,7 @@ def main(img_dir):
         _, R, T, inliers = cv2.solvePnPRansac(pts_3D[corr_points1], linking_matrix[:, 2:4][corr_points2], K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
         R = Rotation.from_rotvec(R.reshape((1,3))).as_matrix().reshape((3,3))
 
+
         print("Completed PnP Ransac for Image ",i+2)
 
         if inliers is not None:
@@ -155,8 +193,8 @@ def main(img_dir):
 
         print("Successfully Registered Image ",i+3)
 
-    save_ply(points, colors, f'../data/output/cv_res_{img_dir.split("/")[-2]}.ply')
+    save_ply(points, colors, f'../data/output/cv_res_{img_type}.ply')
 
 
 if __name__ == "__main__":
-    main("../data/images/turtle/")
+    main("../data/images/monument/")
