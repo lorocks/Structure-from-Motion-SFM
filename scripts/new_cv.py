@@ -83,8 +83,12 @@ def main(img_dir):
     #               [0, 1402, 174.427],
     #               [0, 0, 1]])
     
-    K = np.array([[2393.952166119461, -3.410605131648481e-13, 932.3821770809047 ],
+    '''K = np.array([[2393.952166119461, -3.410605131648481e-13, 932.3821770809047 ],
                   [0, 2398.118540286656, 628.2649953288065],
+                  [0, 0, 1]])'''
+    
+    K = np.array([[700.97, 0, 649.888],
+                  [0, 701.302, 333.853],
                   [0, 0, 1]])
 
       
@@ -168,10 +172,10 @@ def main(img_dir):
             pts_3D = pts_3D[:, 0, :]
             corr_point1, corr_points_2, mask1, mask2 = correspondences(matches_2, linking_matrix[:, 0:2], linking_matrix[:, 2:4]) # was .T match
         
-        corr_points_3 = linking_matrix[:, 2:4][corr_points_2]
-        corr_points_cur = linking_matrix[:, 0:2][corr_points_2]
+        corr_points_3 = linking_matrix[:, 2:4][corr_points_2.astype(np.int32)]
+        corr_points_cur = linking_matrix[:, 0:2][corr_points_2.astype(np.int32)]
 
-        _, R, T, inliers = cv2.solvePnPRansac(pts_3D[corr_point1], corr_points_3, K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
+        _, R, T, inliers = cv2.solvePnPRansac(pts_3D[corr_point1.astype(np.int32)], corr_points_3, K, np.zeros((5, 1), dtype=np.float32), cv2.SOLVEPNP_ITERATIVE)
         R = Rotation.from_rotvec(R.reshape((1,3))).as_matrix().reshape((3,3))
 
         print("Completed PnP Ransac for Image ",i+2)
@@ -214,4 +218,4 @@ def main(img_dir):
 
 
 if __name__ == "__main__":
-    main("../data/images/front/")
+    main("../data/images/turtle/")
