@@ -15,7 +15,7 @@ from utils import *
 
 def main():
 
-    imgs = load_imgs("../data/images/")
+    imgs = load_imgs("../data/images/fountain")
     num_imgs = len(imgs)
     img1 = imgs[0]
     img2 = imgs[1]
